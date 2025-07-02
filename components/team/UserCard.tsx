@@ -11,12 +11,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Mail, Phone, MapPin, Edit } from 'lucide-react';
+import { MoreHorizontal, Mail, Phone, MapPin, Edit, User as UserIcon } from 'lucide-react';
 import { User, useApp } from '@/contexts/AppContext';
-import Link from 'next/link';
+import { UserProfileModal } from './UserProfileModal';
 
 interface UserCardProps {
   user: User;
+  canEdit?: boolean;
 }
 
 const roleColors = {
@@ -32,8 +33,9 @@ const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
 };
 
-export function UserCard({ user }: UserCardProps) {
+export function UserCard({ user, canEdit = false }: UserCardProps) {
   const { updateUser } = useApp();
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const handleRoleChange = (newRole: User['role']) => {
     updateUser(user.id, { role: newRole });
@@ -44,7 +46,8 @@ export function UserCard({ user }: UserCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <>
+      <Card className="hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => setShowProfileModal(true)}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
@@ -60,21 +63,25 @@ export function UserCard({ user }: UserCardProps) {
             </div>
           </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <Link href={`/team/${user.id}`}>
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  View Profile
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canEdit ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}>
+                  <UserIcon className="mr-2 h-4 w-4" />
+                    View Profile
+                  </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}>
+              <UserIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         <div className="mt-4 space-y-2">
@@ -100,46 +107,59 @@ export function UserCard({ user }: UserCardProps) {
 
         <div className="mt-4 flex items-center justify-between">
           <div className="flex space-x-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            {canEdit ? (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Badge className={roleColors[user.role]} variant="secondary">
+                      {user.role}
+                    </Badge>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleRoleChange('admin')}>
+                      Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRoleChange('hr')}>
+                      HR
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRoleChange('manager')}>
+                      Manager
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRoleChange('employee')}>
+                      Employee
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Badge className={statusColors[user.status]} variant="secondary">
+                      {user.status}
+                    </Badge>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleStatusChange('active')}>
+                      Active
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
+                      Inactive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange('pending')}>
+                      Pending
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
                 <Badge className={roleColors[user.role]} variant="secondary">
                   {user.role}
                 </Badge>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleRoleChange('admin')}>
-                  Admin
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleRoleChange('hr')}>
-                  HR
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleRoleChange('manager')}>
-                  Manager
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleRoleChange('employee')}>
-                  Employee
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
                 <Badge className={statusColors[user.status]} variant="secondary">
                   {user.status}
                 </Badge>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleStatusChange('active')}>
-                  Active
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
-                  Inactive
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange('pending')}>
-                  Pending
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </>
+            )}
           </div>
           
           <span className="text-sm text-muted-foreground">
@@ -148,5 +168,13 @@ export function UserCard({ user }: UserCardProps) {
         </div>
       </CardContent>
     </Card>
+
+    {/* User Profile Modal */}
+    <UserProfileModal
+      isOpen={showProfileModal}
+      onClose={() => setShowProfileModal(false)}
+      user={user}
+    />
+    </>
   );
 }

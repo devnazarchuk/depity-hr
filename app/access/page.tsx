@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
+import { AccessControlWrapper } from '@/components/auth/AccessControlWrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -94,11 +95,15 @@ const initialRolePermissions: RolePermissions = {
 };
 
 export default function AccessPage() {
-  const { users, updateUser } = useApp();
+  const { users, updateUser, hasPermission, currentUser } = useApp();
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>(initialRolePermissions);
   const [selectedUser, setSelectedUser] = useState<string>('');
 
+
+
   const handlePermissionToggle = (role: string, permissionId: string) => {
+    if (!hasPermission('access_control_manage')) return;
+    
     setRolePermissions(prev => ({
       ...prev,
       [role]: {
@@ -109,6 +114,8 @@ export default function AccessPage() {
   };
 
   const handleUserRoleChange = (userId: string, newRole: string) => {
+    if (!hasPermission('team_manage_roles')) return;
+    
     updateUser(userId, { role: newRole as any });
   };
 
@@ -128,8 +135,13 @@ export default function AccessPage() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <AccessControlWrapper 
+      requiredRoles={['admin']}
+      requiredPermissions={['access_control_view']}
+      fallbackMessage="Only administrators can access the Access Control page."
+    >
+      <Layout>
+        <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Access Control</h1>
@@ -273,6 +285,7 @@ export default function AccessPage() {
           })}
         </div>
       </div>
-    </Layout>
+      </Layout>
+    </AccessControlWrapper>
   );
 }

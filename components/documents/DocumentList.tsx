@@ -1,8 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +34,12 @@ const formatFileSize = (bytes: number) => {
 };
 
 export function DocumentList({ documents }: DocumentListProps) {
-  const { deleteDocument } = useApp();
+  const { deleteDocument, downloadDocument, renameDocument, hasPermission } = useApp();
+  const [renameModal, setRenameModal] = useState<{ isOpen: boolean; document: Document | null; newName: string }>({
+    isOpen: false,
+    document: null,
+    newName: ''
+  });
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this document?')) {
@@ -33,7 +47,27 @@ export function DocumentList({ documents }: DocumentListProps) {
     }
   };
 
+  const handleDownload = (id: string) => {
+    downloadDocument(id);
+  };
+
+  const handleRename = (document: Document) => {
+    setRenameModal({
+      isOpen: true,
+      document,
+      newName: document.name
+    });
+  };
+
+  const handleRenameSubmit = () => {
+    if (renameModal.document && renameModal.newName.trim()) {
+      renameDocument(renameModal.document.id, renameModal.newName.trim());
+      setRenameModal({ isOpen: false, document: null, newName: '' });
+    }
+  };
+
   return (
+    <>
     <div className="space-y-2">
       {documents.map((document) => (
         <Card key={document.id} className="hover:shadow-sm transition-shadow duration-200">
@@ -63,14 +97,17 @@ export function DocumentList({ documents }: DocumentListProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload(document.id)}>
                       <Download className="mr-2 h-4 w-4" />
                       Download
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                      {hasPermission('documents_upload') && (
+                        <DropdownMenuItem onClick={() => handleRename(document)}>
                       <Edit className="mr-2 h-4 w-4" />
                       Rename
                     </DropdownMenuItem>
+                      )}
+                      {hasPermission('documents_delete') && (
                     <DropdownMenuItem 
                       onClick={() => handleDelete(document.id)}
                       className="text-red-600"
@@ -78,6 +115,7 @@ export function DocumentList({ documents }: DocumentListProps) {
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
+                      )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -86,5 +124,44 @@ export function DocumentList({ documents }: DocumentListProps) {
         </Card>
       ))}
     </div>
+
+      {/* Rename Modal */}
+      <Dialog open={renameModal.isOpen} onOpenChange={(open) => !open && setRenameModal({ isOpen: false, document: null, newName: '' })}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rename Document</DialogTitle>
+            <DialogDescription>
+              Enter a new name for the document.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Input
+                placeholder="Enter new name..."
+                value={renameModal.newName}
+                onChange={(e) => setRenameModal(prev => ({ ...prev, newName: e.target.value }))}
+                autoFocus
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setRenameModal({ isOpen: false, document: null, newName: '' })}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRenameSubmit}
+              disabled={!renameModal.newName.trim()}
+            >
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -37,14 +37,22 @@ export default function UserProfilePage() {
   const router = useRouter();
   const { users, updateUser } = useApp();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+    department: string;
+    role: import('@/contexts/AppContext').User['role'];
+    status: import('@/contexts/AppContext').User['status'];
+  }>({
     name: '',
     email: '',
     phone: '',
     location: '',
     department: '',
-    role: 'employee' as const,
-    status: 'active' as const,
+    role: 'employee',
+    status: 'active',
   });
 
   const userId = params.userId as string;

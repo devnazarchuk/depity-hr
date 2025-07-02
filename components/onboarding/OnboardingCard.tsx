@@ -18,6 +18,7 @@ import { OnboardingTask, useApp } from '@/contexts/AppContext';
 interface OnboardingCardProps {
   task: OnboardingTask;
   user: any;
+  canEdit?: boolean;
 }
 
 const statusConfig = {
@@ -39,8 +40,8 @@ const statusConfig = {
   }
 };
 
-export function OnboardingCard({ task, user }: OnboardingCardProps) {
-  const { updateOnboardingStatus } = useApp();
+export function OnboardingCard({ task, user, canEdit = false }: OnboardingCardProps) {
+  const { updateOnboardingStatus, completeOnboardingTask } = useApp();
   const config = statusConfig[task.status];
   const StatusIcon = config.icon;
 
@@ -68,31 +69,38 @@ export function OnboardingCard({ task, user }: OnboardingCardProps) {
             </div>
           </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Badge className={config.color} variant="secondary">
-                  <StatusIcon className="w-3 h-3 mr-1" />
-                  {task.status.replace('-', ' ')}
-                </Badge>
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleStatusChange('pending')}>
-                Pending
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange('in-progress')}>
-                In Progress
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
-                Completed
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange('overdue')}>
-                Overdue
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canEdit ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Badge className={config.color} variant="secondary">
+                    <StatusIcon className="w-3 h-3 mr-1" />
+                    {task.status.replace('-', ' ')}
+                  </Badge>
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleStatusChange('pending')}>
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange('in-progress')}>
+                  In Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+                  Completed
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange('overdue')}>
+                  Overdue
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Badge className={config.color} variant="secondary">
+              <StatusIcon className="w-3 h-3 mr-1" />
+              {task.status.replace('-', ' ')}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       
@@ -103,13 +111,19 @@ export function OnboardingCard({ task, user }: OnboardingCardProps) {
               <span>Progress</span>
               <span>{completedTasks}/{totalTasks} tasks</span>
             </div>
-            <Progress value={task.progress} className="h-2" />
+            <Progress value={task.progress} max={100} className="h-2" />
           </div>
           
-          <div className="space-y-2">
+                      <div className="space-y-2">
             <h4 className="font-medium text-sm">Tasks:</h4>
             {task.tasks.slice(0, 3).map((subtask) => (
-              <div key={subtask.id} className="flex items-center space-x-2 text-sm">
+              <div 
+                key={subtask.id} 
+                className={`flex items-center space-x-2 text-sm ${
+                  canEdit ? 'cursor-pointer hover:bg-accent p-1 rounded' : ''
+                }`}
+                onClick={() => canEdit && completeOnboardingTask(task.id, subtask.id)}
+              >
                 <CheckCircle 
                   className={`h-4 w-4 ${
                     subtask.completed 

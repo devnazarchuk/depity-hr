@@ -1,33 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { FolderCard } from '@/components/documents/FolderCard';
 import { DocumentList } from '@/components/documents/DocumentList';
+import { CreateFolderModal } from '@/components/documents/CreateFolderModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   Upload, 
   FolderPlus, 
   Search, 
   ArrowLeft,
   Grid3x3,
-  List
+  List,
+  FileText,
+  HardDrive
 } from 'lucide-react';
 import { useApp, Folder } from '@/contexts/AppContext';
 
 export default function DocumentsPage() {
-  const { folders, documents, addFolder, addDocument } = useApp();
+  const { 
+    folders, 
+    documents, 
+    addFolder, 
+    addDocument, 
+    currentUser, 
+    hasPermission,
+    getDocumentsForRole,
+    getUsersForRole,
+    canAccessDocument
+  } = useApp();
+  
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  // Get role-filtered data
+  const roleFilteredDocuments = getDocumentsForRole();
+  const roleFilteredUsers = getUsersForRole();
 
   const currentFolders = folders.filter(folder => 
     folder.parentId === (currentFolder?.id || null)
   );
 
-  const currentDocuments = documents.filter(doc => 
+  // Filter documents based on current folder and role permissions
+  const currentDocuments = roleFilteredDocuments.filter(doc => 
     doc.folderId === (currentFolder?.id || 'root')
   );
 
@@ -39,7 +69,16 @@ export default function DocumentsPage() {
     doc.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Check if user can upload documents
+  const canUpload = hasPermission('documents_upload') || 
+                   hasPermission('documents_upload_team');
+
+  // Check if user can create folders
+  const canCreateFolders = hasPermission('documents_manage_folders');
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUpload) return;
+    
     const files = event.target.files;
     if (files) {
       Array.from(files).forEach(file => {
@@ -48,7 +87,7 @@ export default function DocumentsPage() {
           type: file.type,
           size: file.size,
           folderId: currentFolder?.id || 'root',
-          uploadedBy: 'Current User',
+          uploadedBy: currentUser?.name || 'Unknown User',
           uploadedAt: new Date().toISOString(),
           url: '#'
         });
@@ -56,17 +95,73 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleCreateFolder = () => {
-    const name = prompt('Enter folder name:');
-    if (name) {
-      addFolder({
-        name,
-        parentId: currentFolder?.id || null,
-        owner: 'Current User',
-        createdAt: new Date().toISOString()
-      });
-    }
+  const handleCreateFolder = (name: string) => {
+    if (!canCreateFolders) return;
+    
+    addFolder({
+      name,
+      parentId: currentFolder?.id || null,
+      owner: currentUser?.name || 'Unknown User',
+      createdAt: new Date().toISOString()
+    });
   };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (!canUpload) return;
+    e.preventDefault();
+    setDragOver(true);
+  }, [canUpload]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    if (!canUpload) return;
+    
+    e.preventDefault();
+    setDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach(file => {
+      addDocument({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        folderId: currentFolder?.id || 'root',
+        uploadedBy: currentUser?.name || 'Unknown User',
+        uploadedAt: new Date().toISOString(),
+        url: '#'
+      });
+    });
+  }, [addDocument, currentFolder, currentUser, canUpload]);
+
+  // Sort and filter documents
+  const sortedAndFilteredDocuments = currentDocuments
+    .filter(doc => doc.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'size':
+          comparison = a.size - b.size;
+          break;
+        case 'date':
+          comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  const sortedAndFilteredFolders = currentFolders
+    .filter(folder => folder.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      const comparison = a.name.localeCompare(b.name);
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   return (
     <Layout>
@@ -97,7 +192,9 @@ export default function DocumentsPage() {
           </div>
           
           <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-            <Button onClick={handleCreateFolder} variant="outline">
+            {canUpload && (
+              <>
+                <Button onClick={() => setShowCreateFolderModal(true)} variant="outline">
               <FolderPlus className="mr-2 h-4 w-4" />
               New Folder
             </Button>
@@ -117,6 +214,8 @@ export default function DocumentsPage() {
               className="hidden"
               onChange={handleFileUpload}
             />
+              </>
+            )}
           </div>
         </div>
 
@@ -133,6 +232,25 @@ export default function DocumentsPage() {
           </div>
           
           <div className="flex items-center space-x-2">
+            <Select value={sortBy} onValueChange={(value: 'name' | 'size' | 'date') => setSortBy(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="size">Size</SelectItem>
+                <SelectItem value="date">Date</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+            
             <Button
               variant={viewMode === 'grid' ? 'default' : 'outline'}
               size="sm"
@@ -151,16 +269,24 @@ export default function DocumentsPage() {
         </div>
 
         {/* Content */}
-        <div className="space-y-6">
+        <div 
+          className={`space-y-6 min-h-[400px] ${dragOver ? 'border-2 border-dashed border-primary bg-primary/5' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           {/* Folders */}
-          {!currentFolder && filteredFolders.length > 0 && (
+          {!currentFolder && sortedAndFilteredFolders.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4">Folders</h2>
+              <h2 className="text-lg font-semibold mb-4 flex items-center">
+                <HardDrive className="mr-2 h-5 w-5" />
+                Folders ({sortedAndFilteredFolders.length})
+              </h2>
               <div className={viewMode === 'grid' 
                 ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
                 : "space-y-2"
               }>
-                {filteredFolders.map((folder) => (
+                {sortedAndFilteredFolders.map((folder) => (
                   <FolderCard 
                     key={folder.id} 
                     folder={folder} 
@@ -172,17 +298,18 @@ export default function DocumentsPage() {
           )}
 
           {/* Documents */}
-          {filteredDocuments.length > 0 && (
+          {sortedAndFilteredDocuments.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4">
-                {currentFolder ? 'Files' : 'Recent Files'}
+              <h2 className="text-lg font-semibold mb-4 flex items-center">
+                <FileText className="mr-2 h-5 w-5" />
+                {currentFolder ? 'Files' : 'Recent Files'} ({sortedAndFilteredDocuments.length})
               </h2>
-              <DocumentList documents={filteredDocuments} />
+              <DocumentList documents={sortedAndFilteredDocuments} />
             </div>
           )}
 
           {/* Empty State */}
-          {filteredFolders.length === 0 && filteredDocuments.length === 0 && (
+          {sortedAndFilteredFolders.length === 0 && sortedAndFilteredDocuments.length === 0 && (
             <Card>
               <CardHeader className="text-center">
                 <CardTitle>No documents found</CardTitle>
@@ -194,8 +321,9 @@ export default function DocumentsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
+                {canUpload && (
                 <div className="flex justify-center space-x-2">
-                  <Button onClick={handleCreateFolder} variant="outline">
+                    <Button onClick={() => setShowCreateFolderModal(true)} variant="outline">
                     <FolderPlus className="mr-2 h-4 w-4" />
                     Create Folder
                   </Button>
@@ -215,10 +343,29 @@ export default function DocumentsPage() {
                     onChange={handleFileUpload}
                   />
                 </div>
+                )}
               </CardContent>
             </Card>
           )}
         </div>
+
+        {/* Create Folder Modal */}
+        <CreateFolderModal
+          isOpen={showCreateFolderModal}
+          onClose={() => setShowCreateFolderModal(false)}
+          onCreateFolder={handleCreateFolder}
+          parentFolderId={currentFolder?.id || null}
+        />
+
+        {/* Info for limited permissions */}
+        {!canUpload && (
+          <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              <strong>Note:</strong> You can view documents but cannot upload or delete files. 
+              Contact HR or Admin for file management.
+            </p>
+          </div>
+        )}
       </div>
     </Layout>
   );
