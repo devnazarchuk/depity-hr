@@ -725,17 +725,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = (permission: string): boolean => {
     if (!currentUser) return false;
     const userPermissions = permissions[currentUser.role as keyof typeof permissions];
-    
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`hasPermission check:`, {
-        permission,
-        userRole: currentUser.role,
-        userPermissions,
-        hasPermission: userPermissions?.includes(permission) || false
-      });
-    }
-    
     return userPermissions?.includes(permission) || false;
   };
 
@@ -759,8 +748,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       case 'hr':
         return users; // All users for HR
       case 'manager':
-        // Return users in the same department as the manager
-        return users.filter(user => user.department === currentUser.department);
+        // Managers can see all users (but can only edit employees and HR)
+        return users;
       case 'employee':
         // Employees can only see themselves
         return users.filter(user => user.id === currentUser.id);
@@ -828,10 +817,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       case 'admin':
         return true; // Can edit anyone
       case 'hr':
-        return true; // HR can edit anyone
+        return false; // HR cannot edit data on team page
       case 'manager':
-        // Can edit team members
-        return targetUser.department === currentUser.department;
+        // Can edit all users except admins and managers
+        return targetUser.role !== 'admin' && targetUser.role !== 'manager';
       case 'employee':
         // Can only edit themselves
         return userId === currentUser.id;

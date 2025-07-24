@@ -48,133 +48,117 @@ export function UserCard({ user, canEdit = false }: UserCardProps) {
   return (
     <>
       <Card className="hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => setShowProfileModal(true)}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>
-                {user.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold text-lg">{user.name}</h3>
-              <p className="text-sm text-muted-foreground">{user.department}</p>
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback>
+                  {user.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className="font-semibold text-lg">{user.name}</h3>
+                <p className="text-sm text-muted-foreground">{user.department}</p>
+              </div>
             </div>
-          </div>
-          
-          {canEdit ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}>
-                  <UserIcon className="mr-2 h-4 w-4" />
-                    View Profile
-                  </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
+            
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}>
               <UserIcon className="h-4 w-4" />
             </Button>
-          )}
-        </div>
-
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Mail className="h-4 w-4" />
-            <span>{user.email}</span>
           </div>
-          
-          {user.phone && (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{user.phone}</span>
-            </div>
-          )}
-          
-          {user.location && (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>{user.location}</span>
-            </div>
-          )}
-        </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex space-x-2">
-            {canEdit ? (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Badge className={roleColors[user.role]} variant="secondary">
-                      {user.role}
-                    </Badge>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleRoleChange('admin')}>
-                      Admin
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleRoleChange('hr')}>
-                      HR
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleRoleChange('manager')}>
-                      Manager
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleRoleChange('employee')}>
-                      Employee
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Badge className={statusColors[user.status]} variant="secondary">
-                      {user.status}
-                    </Badge>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleStatusChange('active')}>
-                      Active
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
-                      Inactive
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange('pending')}>
-                      Pending
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Badge className={roleColors[user.role]} variant="secondary">
-                  {user.role}
-                </Badge>
-                <Badge className={statusColors[user.status]} variant="secondary">
-                  {user.status}
-                </Badge>
-              </>
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              <span>{user.email}</span>
+            </div>
+            
+            {user.phone && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Phone className="h-4 w-4" />
+                <span>{user.phone}</span>
+              </div>
+            )}
+            
+            {user.location && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                <span>{user.location}</span>
+              </div>
             )}
           </div>
-          
-          <span className="text-sm text-muted-foreground">
-            Joined {new Date(user.joinDate).toLocaleDateString()}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
 
-    {/* User Profile Modal */}
-    <UserProfileModal
-      isOpen={showProfileModal}
-      onClose={() => setShowProfileModal(false)}
-      user={user}
-    />
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex space-x-2">
+              {canEdit ? (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Badge className={roleColors[user.role]} variant="secondary">
+                        {user.role}
+                      </Badge>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleRoleChange('admin')}>
+                        Admin
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRoleChange('hr')}>
+                        HR
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRoleChange('manager')}>
+                        Manager
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRoleChange('employee')}>
+                        Employee
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Badge className={statusColors[user.status]} variant="secondary">
+                        {user.status}
+                      </Badge>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleStatusChange('active')}>
+                        Active
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('inactive')}>
+                        Inactive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange('pending')}>
+                        Pending
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <Badge className={roleColors[user.role]} variant="secondary">
+                    {user.role}
+                  </Badge>
+                  <Badge className={statusColors[user.status]} variant="secondary">
+                    {user.status}
+                  </Badge>
+                </>
+              )}
+            </div>
+            
+            <span className="text-sm text-muted-foreground">
+              Joined {new Date(user.joinDate).toLocaleDateString()}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        user={user}
+      />
     </>
   );
 }

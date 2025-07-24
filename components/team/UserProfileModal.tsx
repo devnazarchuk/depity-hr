@@ -31,7 +31,7 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ isOpen, onClose, user }: UserProfileModalProps) {
-  const { updateUser, hasPermission } = useApp();
+  const { updateUser, hasPermission, canEditUser } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -212,7 +212,7 @@ export function UserProfileModal({ isOpen, onClose, user }: UserProfileModalProp
         </div>
         
         <DialogFooter>
-          {hasPermission('team_edit') && (
+          {user && canEditUser(user.id) && (
             <>
               {isEditing ? (
                 <>
