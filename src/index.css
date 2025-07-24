@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure full height and background coverage */
+html, body {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #111827, #111827, rgba(147, 51, 234, 0.2));
+  background-attachment: fixed;
+}
+
+/* Improve text wrapping */
+.break-words {
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure containers take full height */
+#root {
+  min-height: 100vh;
+}
